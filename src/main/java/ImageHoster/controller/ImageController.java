@@ -1,8 +1,10 @@
 package ImageHoster.controller;
 
+import ImageHoster.model.Comment;
 import ImageHoster.model.Image;
 import ImageHoster.model.Tag;
 import ImageHoster.model.User;
+import ImageHoster.service.CommentService;
 import ImageHoster.service.ImageService;
 import ImageHoster.service.TagService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.*;
 
 @Controller
@@ -26,6 +29,9 @@ public class ImageController {
 
     @Autowired
     private TagService tagService;
+
+    @Autowired
+    private CommentService commentService;
 
     //This method displays all the images in the user home page after successful login
     @RequestMapping("images")
@@ -50,6 +56,9 @@ public class ImageController {
         Image image = imageService.getImage(imageId);
         model.addAttribute("image", image);
         model.addAttribute("tags", image.getTags());
+
+        List<Comment> comments = commentService.getCommentsByImageId(imageId);
+        model.addAttribute("comments", comments);
         return "images/image";
     }
 
@@ -101,6 +110,10 @@ public class ImageController {
             Boolean editError = true;
             model.addAttribute("tags", image.getTags());
             model.addAttribute("editError", editError);  // Add "editError" attribute
+
+            List<Comment> comments = commentService.getCommentsByImageId(imageId);
+            model.addAttribute("comments", comments);
+
             return "images/image";                        // Return to the image.html
         }
 
@@ -156,6 +169,9 @@ public class ImageController {
             model.addAttribute("image", image);
             model.addAttribute("tags", image.getTags());
 
+            List<Comment> comments = commentService.getCommentsByImageId(imageId);
+            model.addAttribute("comments", comments);
+
             Boolean deleteError = true;
             model.addAttribute("deleteError", deleteError);   // Add "deleteError" attribute to the model
             return "images/image";                                  // Return to the image.html
@@ -165,6 +181,21 @@ public class ImageController {
         return "redirect:/images";
     }
 
+    @RequestMapping(value = "/image/{imageId}/{imageTitle}/comments", method = RequestMethod.POST)
+    private String addComment(@PathVariable(name = "imageId") Integer imageId, @RequestParam(name = "comment") String comment, Model model,HttpSession session){
+        Comment newComment = new Comment();
+        User user = (User) session.getAttribute("loggeduser");
+        newComment.setUser(user);
+
+        Image image = imageService.getImage(imageId);
+        newComment.setImage(image);
+
+        newComment.setText(comment);
+        newComment.setCreatedDate(LocalDate.now());
+
+        commentService.addComment(newComment);
+        return "redirect:/images/" + image.getId() + "/" + image.getTitle();
+    }
 
     //This method converts the image to Base64 format
     private String convertUploadedFileToBase64(MultipartFile file) throws IOException {
