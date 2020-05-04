@@ -94,18 +94,18 @@ public class ImageController {
     @RequestMapping(value = "/editImage")
     public String editImage(@RequestParam("imageId") Integer imageId, Model model, HttpSession session) {
         User user = (User) session.getAttribute("loggeduser");  // Get user from logged in session
-
         Image image = imageService.getImage(imageId);
-        String tags = convertTagsToString(image.getTags());
         model.addAttribute("image", image);
-        model.addAttribute("tags", tags);
 
         if(image.getUser().getId() != user.getId()) { // Validate image owner against logged-in user
             Boolean editError = true;
+            model.addAttribute("tags", image.getTags());
             model.addAttribute("editError", editError);  // Add "editError" attribute
             return "images/image";                        // Return to the image.html
         }
 
+        String tags = convertTagsToString(image.getTags());
+        model.addAttribute("tags", tags);
         return "images/edit";
     }
 
@@ -153,9 +153,8 @@ public class ImageController {
         Image image = imageService.getImage(imageId);
 
         if(image.getUser().getId() != user.getId()) {                // Validate image owner against logged-in user
-            String tags = convertTagsToString(image.getTags());
             model.addAttribute("image", image);
-            model.addAttribute("tags", tags);
+            model.addAttribute("tags", image.getTags());
 
             Boolean deleteError = true;
             model.addAttribute("deleteError", deleteError);   // Add "deleteError" attribute to the model
